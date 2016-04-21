@@ -1,0 +1,8 @@
+site_name: ugc.aggregator
+pages:
+- Home: index.md
+- pybuilder: pybuilder.md
+- mkdocs: mkdocs.md
+- About: about.md
+
+#theme: readthedocs
