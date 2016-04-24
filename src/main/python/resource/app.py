@@ -136,5 +136,16 @@ def get_hotel_bedinfo():
     except:
         abort(404)
 
+'''
+发布房间各房型剩余房间数
+'''
+@app.route('/ugc.hotel/rest/v100/map/get/hotelroomnum',methods=['GET'])
+def get_hotel_roomnum():
+    try:
+        data = tuniu_data_service.getbed_roomnum(request.args["hotel_name"])
+        return json.dumps(data)
+    except:
+        abort(404)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=5000)

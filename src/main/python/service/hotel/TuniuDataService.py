@@ -18,30 +18,95 @@ class TuniuDataService(object):
         self.bed = {}
 
 
+    '''
+    返回各房型剩余房间数信息
+    '''
+    def getbed_roomnum(self,hotelname):
+        roomshengyv = []
+        hotel_List = hotelname.split(',')
+        hotel1 = [["3-21","4-14","4-17","4-19","4-21"],["大床房","豪华套间","双人标间","商务大床房","精选大床房"],[28,39,55,16,71],[33,65,21,56,85],[13,16,59,41,26],[56,90,12,52,32],[42,16,59,36,21]]
+        hotel2 = [["3-21","4-14","4-17","4-19","4-21"],["标准双人房","大床房","精选大床房","商务大床房","豪华家庭房"],[55,13,62,42,190],[63,26,75,41,64],[20,62,61,42,71],[13,65,26,58,49],[74,52,68,23,62]]
+        hotel3 = [["3-21","4-14","4-17","4-19","4-21"],["精选大床房","特价房","豪华套间","豪华大床房","大床房"],[28,56,23,91,42],[62,52,12,36,55],[100,56,23,81,20],[63,59,74,52,12],[63,69,65,21,35]]
+        hotel4 = [["3-21","4-14","4-17","4-19","4-21"],["豪华家庭房","大床房","商务大床房","豪华套间","精选大床房"],[55,21,25,69,54],[74,51,23,65,85],[51,20,52,36,57],[85,42,16,32,54],[63,56,85,41,21]]
+        if len(hotel_List) == 1:
+            roomshengyv.append(hotel_List[0])
+            roomshengyv.append(hotel1)
+            return roomshengyv
+        elif len(hotel_List) == 2:
+            roomshengyv.append(hotel_List[0])
+            roomshengyv.append(hotel1)
+            roomshengyv.append(hotel_List[1])
+            roomshengyv.append(hotel2)
+            return roomshengyv
+        elif len(hotel_List) == 3:
+            roomshengyv.append(hotel_List[0])
+            roomshengyv.append(hotel1)
+            roomshengyv.append(hotel_List[1])
+            roomshengyv.append(hotel2)
+            roomshengyv.append(hotel_List[2])
+            roomshengyv.append(hotel3)
+            return roomshengyv
+        else:
+            roomshengyv.append(hotel_List[0])
+            roomshengyv.append(hotel1)
+            roomshengyv.append(hotel_List[1])
+            roomshengyv.append(hotel2)
+            roomshengyv.append(hotel_List[2])
+            roomshengyv.append(hotel3)
+            roomshengyv.append(hotel_List[3])
+            roomshengyv.append(hotel4)
+            return roomshengyv
+
+
+
+
+
+    '''
+    从数据库获取酒店名称所对应房间信息
+    '''
     # 从数据库获取酒店名称所对应房间信息
     def getbed_info(self,hotelname):
+        bed = []
         hotel_list = hotelname.split(',')
         for hotel in hotel_list:
             bedinfo = self.get_bedcommpent(hotel)
-            self.bed[hotel] = bedinfo
-        return self.bed
+            bed.append(hotel)
+            bed.append(bedinfo)
+        return bed
 
     def get_bedcommpent(self,hotel):
-        bedInfo = {}
+        dataNum = self.getdatanum(hotel)
+        bedInfo = []
         bedtype = [] # 所有床型
-        bedtypeinfo = {}
+        bedtypeinfo = [] #去掉了重复的床型
+        # 添加日期对应，价格信息
+        bedprais = {}
         bedlist = self.dao._returnbed(hotel)
         for bedList in bedlist:
-                if bedList[1] in bedtype:
-                    pass
-                else:bedtype.append(bedList[1])
-        for bedList in bedlist:
             if bedList[1] in bedtype:
-                bedpraise = re.sub('\D','',str(bedList[7]))
-                bedtypeinfo[bedList[8]] = bedpraise
-            Bedtypeinfo = sorted(bedtypeinfo.iteritems(),key=lambda d:d[0].split('-'))
-            bedInfo[bedList[1]] = Bedtypeinfo
+                pass
+            else:bedtypeinfo.append(bedList[1])
+
+        for bedtyp in bedtypeinfo:
+            for bedList in bedlist:
+                if bedList[1] == bedtyp:
+                    bedpraise = re.sub('\D','',str(bedList[7]))
+                    bedprais[bedList[8]] = bedpraise
+                    if bedList[1] not in bedInfo:
+                        if len(bedprais) == dataNum:
+                            Bedtypeinfo = sorted(bedprais.iteritems(),key=lambda d:d[0].split('-'))
+                            bedInfo.append(bedList[1])
+                            bedInfo.append(Bedtypeinfo)
         return bedInfo
+
+    # 获得日期总数
+    def getdatanum(self,hotel):
+        datanum = []
+        bedlist = self.dao._returnbed(hotel)
+        for bedList in bedlist:
+            if bedList[8] not in datanum:
+                datanum.append(bedList[8])
+        return len(datanum)
 
 
     '''
