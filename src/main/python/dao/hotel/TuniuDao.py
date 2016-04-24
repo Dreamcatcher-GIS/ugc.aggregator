@@ -192,7 +192,7 @@ class TuniuDAO(SuperDAO):
         db.close()
         return hotel_comments
 
-	# 获得途牛酒店对应的guid
+    # 获得途牛酒店对应的guid
     def _returnbed(self,hotel_name):
         db = MySQLdb.connect(self.host,self.user,self.password,self.db,charset='utf8')
         cursor = db.cursor()

@@ -15,10 +15,11 @@ class HotelCatcher(object):
     '''
     def startCrawlListPage(self, service, city):
         # 如果爬取成功，则存储数据
+        service.set_city(city)
         while 1:
-            if(service.crawlListPage(city)):
+            if(service.crawlListPage()):
                 service.saveListPageInfo()
-                service.closeDriver()
+                # service.closeDriver()
                 break
             else:
                 service.listPageInfo = []
@@ -27,7 +28,8 @@ class HotelCatcher(object):
     抓取酒店详情页
     '''
     def startCrawlDetail(self, service, city):
-        listPageInfo = list(service.getListPageInfo(city))
+        service.set_city(city)
+        listPageInfo = list(service.getListPageInfo())
         listPageInfo = listPageInfo[0:]
         loop = 0
         while len(listPageInfo)>0:
@@ -59,6 +61,8 @@ class HotelCatcher(object):
 if __name__ == "__main__":
     hotelCatcher = HotelCatcher()
     tuniu_service = TuniuService()
+
+    hotelCatcher.startCrawlListPage(tuniu_service, "南京")
     # 设置爬取的内容
     tuniu_service.set_crawl_content(if_crawl_hotel_comment=False,if_crawl_hotel_info=False,if_crawl_hotel_price=True)
     # 开始爬取

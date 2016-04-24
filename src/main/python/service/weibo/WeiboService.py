@@ -1,8 +1,15 @@
 # -*- coding:utf-8 -*-
+import json
+import traceback
+
 __author__ = 'DreamCathcer'
 
 import random
 import datetime
+import gevent
+import gevent.monkey
+from gevent.queue import Queue
+gevent.monkey.patch_all()
 
 from service.weibo.APIService import WeiboAPIService
 from service.map.baidu.APIService import BaiduMapAPIService
@@ -44,12 +51,57 @@ class WeiboService(object):
                 continue
             if "statuses" in data:
                 if len(data['statuses']) >= 49:
-                    mid_time = int((time_range[1]+time_range[0])/2)
+                    mid_time = int((int(time_range[1])+int(time_range[0]))/2)
                     query_queue.append([time_range[0],mid_time])
                     query_queue.append([mid_time,time_range[1]])
                 else:
                     weibo_data.extend(data['statuses'])
         return weibo_data
+
+    '''
+    异步获取该地点和时间内所有的签到微博
+    '''
+    def get_all_weibo_nearby_async(self, lat, lng, starttime, endtime, radius=3000, count=50, offset=0):
+        def weibo_nearby(api_account):
+            client = WeiboAPIService(appKey=api_account[1], appSecret=api_account[2], token=api_account[3])
+            while not tasks.empty():
+                time_range = tasks.get_nowait()
+                try:
+                    print "thread start:  account:"+str(api_account)+"  range:"+str(time_range)
+                    info = client.getWeibo_nearbyline(lat,lng,time_range[0],time_range[1],radius,count,offset)
+                    if "statuses" in info:
+                        if len(info['statuses']) >= 49:
+                            mid_time = int((int(time_range[1])+int(time_range[0]))/2)
+                            tasks.put_nowait([time_range[0],mid_time])
+                            tasks.put_nowait([mid_time,time_range[1]])
+                        else:
+                            data.put_nowait(info['statuses'])
+                    print "thread end:  account:"+str(api_account)+"  range:"+str(time_range)
+                except:
+                    tasks.put_nowait(time_range)
+                    continue
+
+        # 结果数据
+        result_data = []
+        # 线程存储数据
+        data = Queue()
+        # 任务
+        tasks = Queue()
+        # 查看可用的api账号
+        if self.api_accounts == None:
+            self.api_accounts = self.weiboDAO.get_weibo_accounts()
+        step = int((endtime-starttime)/len(self.api_accounts)/int(radius/100))
+        # 切割查询时间区域至task中
+        for i in range(0,len(self.api_accounts)*int(radius/100)-1):
+            tasks.put_nowait([starttime+step*i,starttime+step*(i+1)])
+        # 根据微博api账号数执行线程
+        threads = []
+        for account in self.api_accounts:
+            threads.append(gevent.spawn(weibo_nearby,account))
+        gevent.joinall(threads)
+        while not data.empty():
+            result_data.extend(data.get_nowait())
+        return result_data
 
     '''
     根据年份对微博数据进行统计
@@ -63,6 +115,8 @@ class WeiboService(object):
         statis_item["city_location"] = {}
         # 统计签到博主的来源
         statis_item["city_counter"] = {}
+        # 微博内容
+        statis_item["weibo_info"] = data
         for datum in data:
             if "created_at" in datum:
                 # 获取微博创建时间
@@ -97,14 +151,73 @@ class WeiboService(object):
         return statis_item
 
     '''
-    获取一组用户的签到时间线
+    同步获取一组用户的签到微博
     '''
-    def get_weibo_users_timeline(self, usersid):
+    def get_weibo_users_timeline(self, id_str):
         result_data = {}
-        userid_list = usersid.split(',')
+        userid_list = id_str.split(',')
         for userid in userid_list:
-            user_timeline = self.apiService.get_weibo_user_timeline(userid)
+            self.random_api_account()
+            user_timeline = self.apiService.get_weibo_user_timeline(userid,count=20)
             result_data[userid] = user_timeline
+        return result_data
+
+
+    '''
+    异步获取一组用户的签到微博
+    '''
+    def get_weibo_users_timeline_async(self, id_str):
+        def get_timeline_data(api_account):
+            while not tasks.empty():
+                client = WeiboAPIService(appKey=api_account[1], appSecret=api_account[2], token=api_account[3])
+                id = tasks.get_nowait()
+                data.put_nowait(client.get_weibo_user_timeline(id))
+        result_data = []
+        data = Queue()
+        tasks = Queue()
+        for id in id_str.split(","):
+            tasks.put_nowait(id)
+        # 查看可用的api账号
+        if self.api_accounts == None:
+            self.api_accounts = self.weiboDAO.get_weibo_accounts()
+        threads = []
+        for account in self.api_accounts:
+            threads.append(gevent.spawn(get_timeline_data,account))
+        gevent.joinall(threads)
+        while not data.empty():
+            result_data.append(data.get_nowait())
+        return result_data
+
+
+    def get_weibo_users_timeline_statics(self, id_str):
+        result_data = {}
+        result_data["line"] = []
+        result_data["point"] = {}
+        weibo_data = self.get_weibo_users_timeline_async(id_str)
+        for item in weibo_data:
+            line = item["statuses"]
+            for i in range(0, len(line)-1):
+                try:
+                    start_place = line[i]["annotations"][0]["place"]
+                    end_place = line[i+1]["annotations"][0]["place"]
+                    if start_place["lat"] != end_place["lat"]:
+                        start_point = {"name":start_place["title"],"geoCoord":[start_place["lon"],start_place["lat"]]}
+                        end_point = {"name":end_place["title"],"geoCoord":[end_place["lon"],end_place["lat"]],"value":1}
+                        result_data["line"].append([start_point,end_point])
+                    coord_str = str(end_place["lon"])+","+str(end_place["lat"])
+                    if coord_str not in result_data["point"]:
+                        result_data["point"][coord_str] = {
+                            "name":end_place["title"],
+                            "geoCoord":[
+                                end_place["lon"],
+                                end_place["lat"]
+                            ],
+                            "value":1
+                        }
+                    else:
+                        result_data["point"][coord_str]["value"]+=1
+                except:
+                    continue
         return result_data
 
     def saveWeibo_byCycle(self,lat,lon,starttime,endtime,radius=3000,count=50,offset=0):

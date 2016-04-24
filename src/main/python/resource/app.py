@@ -7,6 +7,8 @@ from flask import request
 from flask.ext.cors import CORS
 import json
 import traceback
+import redis
+r = redis.Redis(host='localhost',port=6379,db=0)
 
 from service.weibo.WeiboService import WeiboService
 from service.hotel.TuniuDataService import TuniuDataService
@@ -39,9 +41,36 @@ def weibo_nearbytimeline():
 @app.route('/ugc.hotel/rest/v100/weibo/get/nearby_timeline/statics', methods=['GET'])
 def weibo_nearbytimeline_wrapper():
     try:
-        data = weibo_service.get_all_weibo_nearby(request.args["lat"], request.args["lng"], request.args["starttime"], request.args["endtime"],request.args["range"])
-        return json.dumps(weibo_service.nearby_weibo_statis_wrapper(data))
+        data = r.get(request.url)
+        if data is None:
+            data = weibo_service.get_all_weibo_nearby_async(
+                request.args["lat"],
+                request.args["lng"],
+                int(request.args["starttime"]),
+                int(request.args["endtime"]),
+                int(request.args["range"])
+            )
+            data = json.dumps(weibo_service.nearby_weibo_statis_wrapper(data))
+            r.set(request.url,data)
+        return data
     except:
+        traceback.print_exc()
+        abort(404)
+
+'''
+微博用户轨迹
+'''
+@app.route('/ugc.hotel/rest/v100/weibo/get/user_trace',methods=['GET'])
+def get_weibo_user_trace():
+    try:
+        data = r.get(request.url)
+        if data is None:
+            data = weibo_service.get_weibo_users_timeline_statics(request.args["id"])
+            data = json.dumps(data)
+            r.set(request.url,data)
+        return data
+    except:
+        traceback.print_exc()
         abort(404)
 
 @app.route('/ugc.hotel/rest/v100/hotel/get/CommTypeNum', methods=['GET'])
@@ -108,4 +137,4 @@ def get_hotel_bedinfo():
         abort(404)
 
 if __name__ == '__main__':
-    app.run(host='192.168.1.124',port=5000)
+    app.run(host='0.0.0.0',port=5000)
