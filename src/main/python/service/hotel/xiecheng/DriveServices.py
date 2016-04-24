@@ -84,6 +84,7 @@ class XiechengDriverService(object):
                 else:
                     break
         return False if pageNum > 1 else True
+
     # 爬取酒店基本信息
     def pagecollect(self,response):
         items = []

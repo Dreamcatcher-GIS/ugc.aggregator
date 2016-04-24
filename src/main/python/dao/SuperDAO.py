@@ -46,6 +46,9 @@ class SuperDAO(object):
         cursor.close()
         db.close()
 
+    '''
+    获取多条记录
+    '''
     def get_records(self, table_name):
         db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
         cursor = db.cursor()

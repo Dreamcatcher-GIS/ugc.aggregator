@@ -13,7 +13,7 @@ class TianMapAPIService(object):
     # 地址：http://map.tianditu.com/query.shtml
     # 类型：post
     def tdtGeocoding(self,address):
-        postStr = "{\"keyWord\":\"address\",\"level\":\"18\",\"mapBound\":\"117.15973,39.10137,117.16825,39.10371\",\"queryType\":\"1\",\"count\" :\"20\",\"start\":\"0\",\"queryTerminal\":\"10000\"}"
+        postStr = "{\"keyWord\":\"address\",\"level\":\"12\",\"mapBound\":\"118.61107,31.90788,118.93449,32.18735\",\"queryType\":\"1\",\"count\" :\"20\",\"start\":\"0\",\"queryTerminal\":\"10000\"}"
         postStr = postStr.replace("address",address)
         data=self.tiandituClient.query.addtrail(".shtml").post(postStr=postStr,type="query")
         return data

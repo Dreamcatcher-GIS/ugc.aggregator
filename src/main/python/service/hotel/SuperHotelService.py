@@ -18,6 +18,8 @@ class HotelService(object):
 
         self.if_crawl_hotel_price = True
 
+        self._city = None
+
     '''
     打开路径
     '''
@@ -41,7 +43,7 @@ class HotelService(object):
     遍历酒店信息列表页，爬取酒店详情页链接
     抓取成功返回True  失败返回False
     '''
-    def crawlListPage(self,cityName):
+    def crawlListPage(self):
         pass
 
     '''
@@ -49,6 +51,9 @@ class HotelService(object):
     '''
     def saveListPageInfo(self):
         pass
+
+    def set_city(self, city):
+        self._city = city
 
     '''
     抓取酒店信息
@@ -65,7 +70,7 @@ class HotelService(object):
     '''
     获取酒店列表页数据
     '''
-    def getListPageInfo(self, city):
+    def getListPageInfo(self):
         pass
 
     def scroll_and_click_by_partial_link_text(self, text, from_bottom=False):
@@ -88,7 +93,7 @@ class HotelService(object):
                 else:
                     self.driver.find_element_by_tag_name("body").send_keys(Keys.HOME)
             if x == 1501:
-                raise Exception(u"点击评论类型出错",self.driver.current_url)
+                print u"点击评论类型出错" + self.driver.current_url
                 break
             self.driver.find_element_by_tag_name("body").send_keys(key)
             try:
@@ -122,7 +127,7 @@ class HotelService(object):
                     self.driver.find_element_by_tag_name("body").send_keys(Keys.HOME)
                 time.sleep(sleep_time)
             if x == 1501:
-                raise Exception(u"点击评论类型出错",self.driver.current_url)
+                print u"点击评论类型出错" + self.driver.current_url
                 break
             self.driver.find_element_by_tag_name("body").send_keys(key)
             try:

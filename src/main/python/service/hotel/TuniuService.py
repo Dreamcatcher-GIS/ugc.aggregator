@@ -11,9 +11,12 @@ import json
 import traceback
 import datetime
 
+from dao.hotel.HotelDAO import HotelDAO
 from dao.hotel.TuniuDao import TuniuDAO
 from service.hotel.SuperHotelService import HotelService
 from service.nlp.HotelNLP import HotelNLP
+from service.map.baidu.APIService import BaiduMapAPIService
+from util.geo import CoordTransor
 from setting import local_hotel_setting
 
 # 配置数据库
@@ -23,7 +26,9 @@ class TuniuService(HotelService):
 
     def __init__(self):
         HotelService.__init__(self)
-
+        # 酒店dao
+        self.hotel_dao = HotelDAO(dao_setting["host"], dao_setting["db"], dao_setting["user"], dao_setting["password"])
+        # 途牛dao
         self.dao = TuniuDAO(dao_setting["host"], dao_setting["db"], dao_setting["user"], dao_setting["password"])
         # 自然语言处理
         self.hotelNLP = HotelNLP()
@@ -41,11 +46,15 @@ class TuniuService(HotelService):
     '''
     遍历酒店信息列表页，爬取酒店详情页链接
     '''
-    def crawlListPage(self, cityName):
-        self.openPage("http://hotel.tuniu.com/list/" + cityName + "p0s0b0")
-        # 单页循环次数
+    def crawlListPage(self):
+        cityName = self._city
+        # 打开酒店详情页
+        tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
+        after_tomorrow = tomorrow + datetime.timedelta(days=1)
+        self.openPage("http://hotel.tuniu.com/list/" + cityName + "p0s0b0"+"?checkindate=" + tomorrow.strftime('%Y-%m-%d') +"&checkoutdate=" + after_tomorrow.strftime('%Y-%m-%d'))
+        # 记录每页的循环次数(初始值为0)
         loopNum = 0
-        # 标识当前页面是否已经爬取：False为未处理，反之为已处理
+        # 标识页面是否已经爬取：False为未处理，反之为已处理
         ifHandle = False
         # 获取总页面数
         pageNum = int(self.driver.find_element_by_xpath("//span[@class='page-num'][last()]/a").text)
@@ -88,11 +97,6 @@ class TuniuService(HotelService):
                     break
         return False if pageNum > 1 else True
 
-    '''
-    保存爬取的酒店列表页数据
-    '''
-    def saveListPageInfo(self):
-        self.dao.saveListPageInfo(self.listPageInfo)
 
     '''
     抓取酒店信息
@@ -166,6 +170,87 @@ class TuniuService(HotelService):
                 return False
         return True
 
+
+    '''
+    保存爬取的酒店列表页数据
+    '''
+    def saveListPageInfo(self):
+        baidu_api_service = BaiduMapAPIService("MviPFAcx5I6f1FkRQlq6iTxc")
+        old_location_info = self.hotel_dao.get_locations(self._city)
+        old_baseinfo = list(self.hotel_dao.get_baseinfo(self._city, "途牛"))
+        # 将基础数据中的if_overtime先假设为都已过时
+        for i in range(0, len(old_baseinfo)):
+            old_baseinfo[i] = list(old_baseinfo[i])
+            old_baseinfo[i][5] = 1
+        new_locations = []
+        new_baseinfo = []
+        update_baseinfo = []
+        # 遍历将要保存的数据
+        for item in self.listPageInfo:
+            location_id = None
+            # 首先检查该酒店是否已经保存在location表中
+            for location in old_location_info:
+                if item["hotel_name"] == location[3]:
+                    location_id = location[0]
+                    break
+            # 如果没有则插入一条新的记录到location表和baseinfo表
+            if location_id == None:
+                location_id = uuid.uuid1()
+                while 1:
+                    try:
+                        geocoding_info = baidu_api_service.doGeocoding(item["hotel_name"], city=self._city)
+                        break
+                    except:
+                        time.sleep(0.5)
+                        continue
+                if "result" not in geocoding_info:
+                    print item["hotel_name"] + "error"
+                    continue
+                trans_location = CoordTransor.bd09togcj02(bd_lon=geocoding_info["result"]["location"]["lng"], bd_lat=geocoding_info["result"]["location"]["lat"])
+                print trans_location
+                new_locations.append({
+                    "guid":location_id,
+                    "x": trans_location[1],
+                    "y": trans_location[0],
+                    "hotel_name":item["hotel_name"],
+                    "city":self._city
+                })
+                new_baseinfo.append({
+                    "guid":item["guid"],
+                    "url":item["url"],
+                    "location_id":location_id,
+                    "OTA":"途牛",
+                    "comm_num":item["comm_num"],
+                    "if_overtime":0,
+                    "incre_num":item["comm_num"],
+                })
+            # 如果存在于location表,则其在baseinfo表中的记录进行更新
+            else:
+                for baseinfo in old_baseinfo:
+                    if location_id == baseinfo[2]:
+                        baseinfo[1] = item["url"]
+                        baseinfo[4] = item["comm_num"]
+                        baseinfo[5] = 0
+                        baseinfo[6] =  item["comm_num"] - baseinfo[4] if item["comm_num"]-baseinfo[4]>0 else 0
+                        break
+        for baseinfo in old_baseinfo:
+            update_baseinfo.append({
+                "guid":baseinfo[0],
+                "url":baseinfo[1],
+                "location_id":baseinfo[2],
+                "OTA":baseinfo[3],
+                "comm_num":baseinfo[4],
+                "if_overtime":baseinfo[5],
+                "incre_num":baseinfo[6]
+            })
+        print len(new_locations)
+        print len(new_baseinfo)
+        print len(update_baseinfo)
+        self.hotel_dao.save_locations(new_locations)
+        self.hotel_dao.save_baseinfo(new_baseinfo)
+        self.hotel_dao.update_baseinfo(update_baseinfo)
+        #self.dao.saveListPageInfo(self.listPageInfo)
+
     '''
     保存抓取的酒店信息
     '''
@@ -180,20 +265,27 @@ class TuniuService(HotelService):
     '''
     获取酒店列表页数据
     '''
-    def getListPageInfo(self, city):
-        return self.dao.getAllUrl(city)
+    def getListPageInfo(self):
+        return self.dao.getAllUrl(self._city)
 
     '''
     解析网页，取出酒店详细链接，存储到urlList中
     '''
-    def __parseUrls(self, page_source, city):
+    def __parseUrls(self, page_source):
         response = HtmlResponse(url="my HTML string",body=page_source,encoding="utf-8")
         # 抽取出每页中的酒店url存储到urlList中
         urlList = response.xpath("//a[@class='name']/@href").extract()
         commnumList = response.xpath("//div[@class='comment']/a/span/text()").extract()
-        if len(urlList) == len(commnumList):
+        name_list = response.xpath("//a[@class='name']/text()").extract()
+        if len(urlList) == len(commnumList) == len(name_list):
             for i in range(0,len(urlList)):
-                self.listPageInfo.append({"url":urlList[i], "comm_num":commnumList[i], "city":city})
+                self.listPageInfo.append({
+                    "guid":uuid.uuid1(),
+                    "url":urlList[i],
+                    "hotel_name":name_list[i],
+                    "OTA":"途牛",
+                    "comm_num":int(commnumList[i]),
+                })
 
     '''
     解析酒店信息
