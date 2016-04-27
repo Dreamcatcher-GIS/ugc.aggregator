@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 __author__ = 'DreamCathcer'
 
+import traceback
 import MySQLdb
 
 class SuperDAO(object):
@@ -34,14 +35,16 @@ class SuperDAO(object):
     def save_records(self, table_name, records):
         db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
         cursor = db.cursor()
-        try:
-            for record in records:
-                placeholders = ', '.join(['%s'] * len(record))
-                columns = ', '.join(record.keys())
-                sql = "insert into %s( %s ) values ( %s )" % (table_name, columns, placeholders)
+        for record in records:
+            placeholders = ', '.join(['%s'] * len(record))
+            columns = ', '.join(record.keys())
+            sql = "insert into %s( %s ) values ( %s )" % (table_name, columns, placeholders)
+            try:
                 cursor.execute(sql, record.values())
-        except Exception, e:
-            print e
+            except:
+                traceback.print_exc()
+                print record["comm_time"]
+                break
         db.commit()
         cursor.close()
         db.close()

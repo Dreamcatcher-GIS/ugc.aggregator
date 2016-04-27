@@ -212,3 +212,6 @@ class TuniuDAO(SuperDAO):
         db.commit()
         cursor.close()
         db.close()
+
+    def get_remarks(self):
+        return self.get_records("tuniu_comm")

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import traceback
+
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.keys import Keys
@@ -8,16 +10,24 @@ import re
 import time
 import uuid
 import random
+
 from dao.hotel.xiechengdao.xiecheng import xiechengDAO
+from dao.hotel.HotelDAO import HotelDAO
+from service.hotel.SuperHotelService import HotelService
 from setting import local_hotel_setting
+from service.map.baidu.APIService import BaiduMapAPIService
+from util.geo import CoordTransor
 
 dao_setting = local_hotel_setting
 
-class XiechengDriverService(object):
+class XiechengDriverService(HotelService):
 
     def __init__(self):
-        # self.driver = webdriver.Chrome()
+        HotelService.__init__(self)
+        # 携程dao
         self.xiechengDao = xiechengDAO(dao_setting["host"], dao_setting["db"], dao_setting["user"], dao_setting["password"])
+        # 酒店dao
+        self.hotel_dao = HotelDAO(dao_setting["host"], dao_setting["db"], dao_setting["user"], dao_setting["password"])
         # 存放列表页数据
         self.listPageInfo = []
         # 存放酒店详情数据
@@ -26,55 +36,48 @@ class XiechengDriverService(object):
         self.commList = []
         # 存储床价信息
         self.bed = {}
+        # 当前ota名称
+        self.__ota_info = "携程"
 
 
-
-
-
-    # 打开携程首页
-    def start(self):
-        self.driver.get("http://hotels.ctrip.com/hotel/nanjing12#ctm_ref=hod_hp_sb_lst")
-        # 将界面最大化
-        self.driver.maximize_window()
-        self.driver.implicitly_wait(30)
-        self.crawlxiecheng()
-
-
-    def crawlxiecheng(self):
+    def crawlListPage(self):
+        self.openPage("http://hotels.ctrip.com/hotel/nanjing12#ctm_ref=hod_hp_sb_lst")
+        self.driver.implicitly_wait(10)
         # 单页循环次数
         loopNum = 0
         # 标识当前页面是否已经爬取：False为未处理，反之为已处理
         ifHandle = False
         # 获取总页面数
-        pageNum = 280
+        pageNum = 140
         while(pageNum>=1):
             # 循环次数加1
             loopNum = loopNum + 1
             # 到达页面90%处
-            js="var q=document.documentElement.scrollTop=9000"
-            self.driver.execute_script(js)
+            # js="var q=document.documentElement.scrollTop=9600"
+            # self.driver.execute_script(js)
+            self.driver.find_element_by_tag_name("body").send_keys(Keys.END)
+            self.driver.find_element_by_tag_name("body").send_keys(Keys.PAGE_UP)
             # 当页面中出现“返前价”字样时，爬取页面并跳转到下一页
             if u"收藏" in self.driver.page_source:
                 # 对未解析过的页面进行解析
                 if ifHandle==False:
-                    self.crawllianjie(self.driver.page_source)
+                    self.__crawllianjie(self.driver.page_source)
+                    print u"获取酒店数为：%d"%len(self.listPageInfo)
                     ifHandle = True
                 # 跳转到下一页
                 try:
                     if u"下一页" in self.driver.page_source:
-                        # self.driver.find_element_by_partial_link_text(u"下一页").click()
+                        self.driver.find_element_by_partial_link_text(u"下一页").click()
+                        #self.driver.find_element_by_xpath("//a[@class='c_down']").click()
                         pageNum = pageNum - 1
-                        self.driver.find_element_by_xpath("//a[@class='c_down']").click()
                         # 处理标识重新置为未处理
                         ifHandle = False
                         # 单页循环次数置为零
                         loopNum = 0
                         time.sleep(random.uniform(3, 6))
-                        print "页数：" +  str(pageNum)
-                except :
-                    pageNum = pageNum + 1
-                    # 将当前的错误页保存下来
-                    # self.driver.save_screenshot('%s.png'%pageNum)
+                        print u"页数：" +  str(pageNum)
+                except:
+                    print "error happen at clicking of nextpage"
             # 如果单页循环次数不为零，说明没有跳转到下一页
             if loopNum != 0:
                 # 循环次数较大的情况下（此处预定为15次）说明页面可能加载失败，跳出循环，否则继续循环获取
@@ -85,108 +88,115 @@ class XiechengDriverService(object):
                     break
         return False if pageNum > 1 else True
 
-    # 爬取酒店基本信息
-    def pagecollect(self,response):
-        items = []
-        commentData = response.xpath("//div[@id='hotel_list']/div[@class='searchresult_list ']/ul[@class='searchresult_info']")
-
-        for itemData in commentData:
-            itemDict = dict()
-
-            # 唯一标识
-            itemDict['guid'] = uuid.uuid1()
-
-            # 城市名
-            itemDict["city"] = "南京"
-
-            # 名称
-            itemDict["title"] = itemData.xpath("li/h2/a[@title]/text()").extract()[0]
-
-            # 价格
-            price = itemData.xpath("li[@class='hotel_price_icon']/div/span/text()").extract()[0]
-            if price:
-                itemDict["price"] = price
-            else:
-                itemDict["price"] = ""
-
-            # 评分
-            score = itemData.xpath("li[@class='searchresult_info_judge ']/div/a/span[@class='hotel_value']/text()").extract()[0]
-            if score:
-                itemDict["score"] = score
-            else:
-                itemDict["score"] = " "
-
-            # 位置
-            location = itemData.xpath("li[@class='searchresult_info_name']/p[@class='searchresult_htladdress']/text()").extract()[0]
-            Location = location.split(" ")
-            if(Location):
-                itemDict["location"] = Location[0]
-            else:
-                itemDict["location"] = " "
-
-            # 评论
-            discussnum = itemData.xpath("li[@class='searchresult_info_judge ']/div/a/span[@class='hotel_judgement']/text()").extract()[0]
-            Discuss = re.sub('\D','',discussnum)
-            if Discuss:
-                itemDict["discussnum"] = Discuss
-            else:
-                itemDict["discussnum"] = ""
-
-            # 有无wifi
-            havewifi1 = itemData.xpath("li[@class='searchresult_info_name']/div[@class='icon_list']/i[@class='icons-facility32']")
-            havawifi2 = itemData.xpath("li[@class='searchresult_info_name']/div[@class='icon_list']/i[@class='icons-facility01']")
-            if (havewifi1 or havawifi2):
-                itemDict["havawifi"] = "yes"
-            else:
-                itemDict["havawifi"] = "no"
-
-            # 用户推荐百分比
-            recommend = itemData.xpath("li[@class='searchresult_info_judge ']/div[@class='searchresult_judge_box']/a/span[@class='total_judgement_score']/text()").extract()[1]
-            Recommend = re.sub('\D','',recommend)
-            Recommend += "%"
-            if Recommend:
-                itemDict["recommend"] = Recommend
-            else:
-                itemDict["recommend"] = " "
-
-            items.append(itemDict)
-        return items
-
-
     # 爬取页面链接
-    def crawllianjie(self,page_sourse):
+    def __crawllianjie(self,page_sourse):
         response = HtmlResponse(url="my HTML string",body=page_sourse,encoding="utf-8")
-
-        A = response.xpath("//div[@class='searchresult_list ']/ul")
-        # 获取每个酒店的链接
-        for B in A:
-            url = B.xpath("li[@class='searchresult_info_name']/h2/a/@href").extract()
-        # 评论
-            commnum = B.xpath("li[@class='searchresult_info_judge ']/div/a/span[@class='hotel_judgement']/text()").extract()
+        hotel_list = response.xpath("//div[@class='searchresult_list ']/ul")
+        for hotel in hotel_list:
+            url = hotel.xpath("li[@class='searchresult_info_name']/h2/a/@href").extract()[0]
+            commnum = hotel.xpath("li[@class='searchresult_info_judge ']/div/a/span[@class='hotel_judgement']/text()").extract()
             if len(commnum):
-                Discuss = re.sub('\D','',commnum[0])
-                if len(Discuss):
-                    pass
-                else:
-                    Discuss = 0
+                commnum = re.sub('\D','',commnum[0])
+                commnum = commnum if len(commnum)>0 else 0
             else:
-                Discuss = 0
-            self.listPageInfo.append({"url":url[0], "comm_num":Discuss, "city":"南京"})
-        xiechengService.saveListPageInfo()
-        if len(self.listPageInfo) == 25:
-            pass
-        else:
-            print len(self.listPageInfo)
-        self.listPageInfo = []
+                commnum = 0
+            name = hotel.xpath("li[@class='searchresult_info_name']/h2/a/text()").extract()[0]
+            self.listPageInfo.append({
+                "guid":uuid.uuid1(),
+                "url":url,
+                "hotel_name":name,
+                "OTA": self.__ota_info,
+                "comm_num":int(commnum)
+            })
 
 
+    '''
+    保存爬取的酒店列表页数据
+    '''
     def saveListPageInfo(self):
-        self.xiechengDao.savehotellink(self.listPageInfo)
+        baidu_api_service = BaiduMapAPIService("MviPFAcx5I6f1FkRQlq6iTxc")
+        old_location_info = self.hotel_dao.get_locations(self._city)
+        old_baseinfo = list(self.hotel_dao.get_baseinfo(self._city, self.__ota_info))
+        # 将基础数据中的if_overtime先假设为都已过时
+        for i in range(0, len(old_baseinfo)):
+            old_baseinfo[i] = list(old_baseinfo[i])
+            old_baseinfo[i][5] = 1
+        new_locations = []
+        new_baseinfo = []
+        update_baseinfo = []
+        # 遍历将要保存的数据
+        for item in self.listPageInfo:
+            location_id = None
+            # 首先检查该酒店是否已经保存在location表中
+            for location in old_location_info:
+                if item["hotel_name"] == location[3]:
+                    location_id = location[0]
+                    break
+            # 如果没有则插入一条新的记录到location表中
+            if location_id == None:
+                location_id = uuid.uuid1()
+                geocoding_info = None
+                while 1:
+                    try:
+                        geocoding_info = baidu_api_service.doGeocoding(item["hotel_name"], city=self._city)
+                        break
+                    except:
+                        time.sleep(0.5)
+                        continue
+                if "result" not in geocoding_info:
+                    print item["hotel_name"] + "error"
+                    continue
+                trans_location = CoordTransor.bd09togcj02(bd_lon=geocoding_info["result"]["location"]["lng"], bd_lat=geocoding_info["result"]["location"]["lat"])
+                print trans_location
+                new_locations.append({
+                    "guid":location_id,
+                    "x": trans_location[1],
+                    "y": trans_location[0],
+                    "hotel_name":item["hotel_name"],
+                    "city":self._city
+                })
+
+            # 根据location的id号到baseinfo表中查询
+            # 如果已经存于表中，则更新该条数据
+            # 如果没有，则插入一条新的数据
+            if_exist = False
+            for baseinfo in old_baseinfo:
+                if location_id == baseinfo[2]:
+                    if_exist = True
+                    baseinfo[1] = item["url"]
+                    baseinfo[4] = item["comm_num"]
+                    baseinfo[5] = 0
+                    baseinfo[6] =  item["comm_num"] - baseinfo[4] if item["comm_num"]-baseinfo[4]>0 else 0
+                    break
+            if not if_exist:
+                new_baseinfo.append({
+                    "guid":item["guid"],
+                    "url":item["url"],
+                    "location_id":location_id,
+                    "OTA":self.__ota_info,
+                    "comm_num":item["comm_num"],
+                    "if_overtime":0,
+                    "incre_num":item["comm_num"],
+                })
+        for baseinfo in old_baseinfo:
+            update_baseinfo.append({
+                "guid":baseinfo[0],
+                "url":baseinfo[1],
+                "location_id":baseinfo[2],
+                "OTA":baseinfo[3],
+                "comm_num":baseinfo[4],
+                "if_overtime":baseinfo[5],
+                "incre_num":baseinfo[6]
+            })
+        print len(new_locations)
+        print len(new_baseinfo)
+        print len(update_baseinfo)
+        self.hotel_dao.save_locations(new_locations)
+        self.hotel_dao.save_baseinfo(new_baseinfo)
+        self.hotel_dao.update_baseinfo(update_baseinfo)
+        #self.dao.saveListPageInfo(self.listPageInfo)
+
 
     def depose(self):
         self.driver.close()
 
-if __name__=="__main__":
-    xiechengService = XiechengDriverService()
-    xiechengService.start()
-    xiechengService.depose()

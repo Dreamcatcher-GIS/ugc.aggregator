@@ -5,13 +5,13 @@ import uuid
 import random
 import json
 
-class xiechengDAO(object):
+from dao.SuperDAO import SuperDAO
+
+
+class xiechengDAO(SuperDAO):
 
     def __init__(self, host, db, user, password):
-        self.host = host
-        self.db = db
-        self.user=user
-        self.password =password
+        SuperDAO.__init__(self, host, db, user, password)
 
     # 存储酒店基本信息
     def savehotelComment(self,items):
@@ -139,3 +139,6 @@ class xiechengDAO(object):
         cursor.close()
         db.close()
         return rows
+
+    def get_comments(self):
+        return self.get_records("hotelcommentinfo")

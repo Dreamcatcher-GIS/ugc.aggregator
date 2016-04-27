@@ -21,12 +21,13 @@ class HotelService(object):
         self._city = None
 
     '''
-    打开路径
+    打开页面
     '''
     def openPage(self,url):
         self.driver.get(url)
         # 将界面最大化
         self.driver.maximize_window()
+
     '''
     等待加载
     '''

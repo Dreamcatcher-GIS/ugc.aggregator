@@ -43,6 +43,8 @@ class TuniuService(HotelService):
 
         self.ifCrawlHotelInfo = True
 
+        self.__ota_info = "途牛"
+
     '''
     遍历酒店信息列表页，爬取酒店详情页链接
     '''
@@ -67,15 +69,16 @@ class TuniuService(HotelService):
             self.driver.find_element_by_tag_name("body").send_keys(Keys.PAGE_UP)
             # 当页面中出现“返前价”字样时，爬取页面并跳转到下一页
             if u"返前价" in self.driver.page_source:
-                pageNum = pageNum - 1
                 # 对未解析过的页面进行解析
                 if ifHandle==False:
                     self.__parseUrls(self.driver.page_source)
+                    print u"获取酒店数为：%d"%len(self.listPageInfo)
                     ifHandle = True
                 # 跳转到下一页
                 try:
                     if u"下一页" in self.driver.page_source:
                         self.driver.find_element_by_xpath("//div[@class='fr page-jump']/span[@class='next']").click()
+                        pageNum = pageNum - 1
                         # 处理标识重新置为未处理
                         ifHandle = False
                         # 单页循环次数置为零
@@ -177,7 +180,7 @@ class TuniuService(HotelService):
     def saveListPageInfo(self):
         baidu_api_service = BaiduMapAPIService("MviPFAcx5I6f1FkRQlq6iTxc")
         old_location_info = self.hotel_dao.get_locations(self._city)
-        old_baseinfo = list(self.hotel_dao.get_baseinfo(self._city, "途牛"))
+        old_baseinfo = list(self.hotel_dao.get_baseinfo(self._city, self.__ota_info))
         # 将基础数据中的if_overtime先假设为都已过时
         for i in range(0, len(old_baseinfo)):
             old_baseinfo[i] = list(old_baseinfo[i])
@@ -193,7 +196,7 @@ class TuniuService(HotelService):
                 if item["hotel_name"] == location[3]:
                     location_id = location[0]
                     break
-            # 如果没有则插入一条新的记录到location表和baseinfo表
+            # 如果没有则插入一条新的记录到location表中
             if location_id == None:
                 location_id = uuid.uuid1()
                 while 1:
@@ -215,24 +218,29 @@ class TuniuService(HotelService):
                     "hotel_name":item["hotel_name"],
                     "city":self._city
                 })
+
+            # 根据location的id号到baseinfo表中查询
+            # 如果已经存于表中，则更新该条数据
+            # 如果没有，则插入一条新的数据
+            if_exist = False
+            for baseinfo in old_baseinfo:
+                if location_id == baseinfo[2]:
+                    if_exist = True
+                    baseinfo[1] = item["url"]
+                    baseinfo[4] = item["comm_num"]
+                    baseinfo[5] = 0
+                    baseinfo[6] =  item["comm_num"] - baseinfo[4] if item["comm_num"]-baseinfo[4]>0 else 0
+                    break
+            if not if_exist:
                 new_baseinfo.append({
                     "guid":item["guid"],
                     "url":item["url"],
                     "location_id":location_id,
-                    "OTA":"途牛",
+                    "OTA":self.__ota_info,
                     "comm_num":item["comm_num"],
                     "if_overtime":0,
                     "incre_num":item["comm_num"],
                 })
-            # 如果存在于location表,则其在baseinfo表中的记录进行更新
-            else:
-                for baseinfo in old_baseinfo:
-                    if location_id == baseinfo[2]:
-                        baseinfo[1] = item["url"]
-                        baseinfo[4] = item["comm_num"]
-                        baseinfo[5] = 0
-                        baseinfo[6] =  item["comm_num"] - baseinfo[4] if item["comm_num"]-baseinfo[4]>0 else 0
-                        break
         for baseinfo in old_baseinfo:
             update_baseinfo.append({
                 "guid":baseinfo[0],
@@ -249,7 +257,6 @@ class TuniuService(HotelService):
         self.hotel_dao.save_locations(new_locations)
         self.hotel_dao.save_baseinfo(new_baseinfo)
         self.hotel_dao.update_baseinfo(update_baseinfo)
-        #self.dao.saveListPageInfo(self.listPageInfo)
 
     '''
     保存抓取的酒店信息
