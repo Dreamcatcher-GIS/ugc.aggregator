@@ -20,7 +20,6 @@ app = Flask(__name__)
 CORS(app)
 
 weibo_service = WeiboService()
-#xiechengDriverService = XiechengDriverService()
 tuniu_data_service = TuniuDataService()
 xiecheng_data_service = XichengDataService()
 hotel_data_service = HotelDataService()
