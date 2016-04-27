@@ -16,7 +16,7 @@ dao_setting = local_hotel_setting
 class XiechengDriverService(object):
 
     def __init__(self):
-        # self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome()
         self.xiechengDao = xiechengDAO(dao_setting["host"], dao_setting["db"], dao_setting["user"], dao_setting["password"])
         # 存放列表页数据
         self.listPageInfo = []
