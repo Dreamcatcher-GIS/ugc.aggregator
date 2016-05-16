@@ -13,7 +13,7 @@ class SnatcherServiceTest(unittest.TestCase):
         print 'setUp...'
 
     def test_doGeocoding(self):
-        print self.baidu_map_api_service.doGeocoding("安徽省芜湖市鸠江区南阳路")
+        print self.baidu_map_api_service.doGeocoding(addressText="高淳县镇兴路208-7号，123省道西侧",city='南京')
 
     def tearDown(self):
         print 'tearDown...'

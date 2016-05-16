@@ -121,6 +121,9 @@ class TuniuDAO(SuperDAO):
         db.close()
         return comm_type_num
 
+    '''
+    更新评论情感值
+    '''
     def update_hotel_comm(self, records):
         db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
         cursor = db.cursor()
@@ -134,6 +137,9 @@ class TuniuDAO(SuperDAO):
         cursor.close()
         db.close()
 
+    '''
+    更新评论形容词统计
+    '''
     def update_hotel_comm_word_freq(self, records):
         db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
         cursor = db.cursor()
@@ -147,6 +153,9 @@ class TuniuDAO(SuperDAO):
         cursor.close()
         db.close()
 
+    '''
+    根据酒店名称获取酒店评论
+    '''
     def get_hotel_comments_by_name(self, hotel_name):
         db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
         cursor = db.cursor()
@@ -213,5 +222,8 @@ class TuniuDAO(SuperDAO):
         cursor.close()
         db.close()
 
+    '''
+    获取途牛中的所有评论
+    '''
     def get_remarks(self):
         return self.get_records("tuniu_comm")

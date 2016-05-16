@@ -138,7 +138,7 @@ class HotelDAO(SuperDAO):
         return result_data
 
     '''
-    通过酒店名获取所有baseinfo
+    通过位置id获取所有baseinfo
     '''
     def get_baseinfo_by_location_id(self, location_id):
         result_data = []

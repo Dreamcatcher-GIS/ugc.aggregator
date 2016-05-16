@@ -37,6 +37,7 @@ class HotelCatcher(object):
         while len(listPageInfo)>0:
             # 从listPageInfo中pop出一个酒店的数据，抓取该酒店的信息
             target = listPageInfo.pop()
+            result = False
             while 1:
                 if loop > 3:
                     result = False
@@ -65,8 +66,8 @@ if __name__ == "__main__":
     hotel_service = TuniuService()
     # hotel_service = XiechengDriverService()
 
-    hotelCatcher.startCrawlListPage(hotel_service, "南京")
+    # hotelCatcher.startCrawlListPage(hotel_service, "南京")
     # 设置爬取的内容
-    # hotel_service.set_crawl_content(if_crawl_hotel_comment=False,if_crawl_hotel_info=False,if_crawl_hotel_price=True)
+    hotel_service.set_crawl_content(if_crawl_hotel_comment=False,if_crawl_hotel_info=False,if_crawl_hotel_price=True)
     # # 开始爬取
-    # hotelCatcher.startCrawlDetail(hotel_service,"南京")
+    hotelCatcher.startCrawlDetail(hotel_service,"南京")
