@@ -216,6 +216,27 @@ class HotelDAO(SuperDAO):
         db.close()
         return result_data
 
+    def get_location_info_by_baseinfo_id(self, baseinfo_id):
+        db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
+        cursor = db.cursor()
+        result_data = []
+        try:
+            sql = '''
+                    SELECT location.* FROM location,
+                    (
+                        SELECT location_id FROM baseinfo WHERE baseinfo.guid = '%s'
+                    )temp1
+                    WHERE location.guid = temp1.location_id
+                  '''
+            cursor.execute(sql%(baseinfo_id))
+            result_data = cursor.fetchall()
+        except Exception, e:
+            print e
+        db.commit()
+        cursor.close()
+        db.close()
+        return result_data
+
     def update_hotel_comm_word_freq(self, records):
         db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
         cursor = db.cursor()

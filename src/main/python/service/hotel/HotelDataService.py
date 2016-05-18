@@ -41,14 +41,13 @@ class HotelDataService(object):
     '''
     酒店评论观点统计
     '''
-    def get_comm_viewpoints(self, baseinfo_id_str, location_id_str):
+    def get_comm_viewpoints(self, baseinfo_id_str):
         baseinfo_id_list = baseinfo_id_str.split(',')
-        location_id_list = location_id_str.split(',')
         viewpoints = []
         for i in range(0, len(baseinfo_id_list)):
             viewpoint = self.get_comm_viewpoint(baseinfo_id_list[i])
-            hotel_info = self.hotel_dao.get_hotel_name_by_location_id(location_id_list[i])
-            hotel_name = hotel_info[0][3] if len(hotel_info)>0 else ""
+            location_info = self.hotel_dao.get_location_info_by_baseinfo_id(baseinfo_id_list[i])
+            hotel_name = location_info[0][3] if len(location_info)>0 else ""
             viewpoints.append({"hotel_name":hotel_name, "viewpoint":viewpoint})
         return viewpoints
 

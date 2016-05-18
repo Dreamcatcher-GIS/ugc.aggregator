@@ -91,7 +91,7 @@ def get_comm_type_score_statics():
 @app.route('/ugc.hotel/rest/v100/hotel/get/viewpoint', methods=['GET'])
 def get_viewpoint():
     try:
-        data = json.dumps(hotel_data_service.get_comm_viewpoints(request.args["baseinfo_id"],request.args["location_id"]))
+        data = json.dumps(hotel_data_service.get_comm_viewpoints(request.args["baseinfo_id"]))
         return data
     except:
         abort(404)
