@@ -13,13 +13,13 @@ class BaiduMapAPIService(object):
         self.baiduClient = APIClient("http://api.map.baidu.com")
         self.__ak = ak
 
-    def doGeocoding(self, addressText):
+    def doGeocoding(self, addressText,city):
         '''
         正向地理编码geocoding
         地址：http://api.map.baidu.com/geocoder/v2/
         类型：get
         '''
-        data = self.baiduClient.geocoder.v2.addtrail("/").get(ak=self.__ak, output="json", address=addressText)
+        data = self.baiduClient.geocoder.v2.addtrail("/").get(ak=self.__ak, output="json", address=addressText,city=city)
         return data
 
     def reverseGeocodingBatch(self, locationList):

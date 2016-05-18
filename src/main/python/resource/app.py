@@ -21,6 +21,7 @@ weibo_service = WeiboService()
 tuniu_data_service = TuniuDataService()
 xiecheng_data_service = XichengDataService()
 
+
 @app.route('/hello', methods=['GET'])
 def hello_world():
     if "name" in request.args:
@@ -118,4 +119,5 @@ def get_hotel_roomnum():
         abort(404)
 
 if __name__ == '__main__':
-    app.run(host='192.168.1.124',port=5000)
+    app.run(host='0.0.0.0',port=5000)
+    pass
