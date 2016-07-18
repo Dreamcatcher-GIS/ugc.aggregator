@@ -72,6 +72,7 @@ def get_baseinfo_by_location_id():
     try:
         return json.dumps(hotel_data_service.get_baseinfo_by_location_id(request.args["location_id"]))
     except:
+        traceback.print_exc()
         abort(404)
 
 @app.route('/ugc.hotel/rest/v100/hotel/get/CommTypeNum', methods=['GET'])
@@ -109,6 +110,7 @@ def get_adjective_statics():
     try:
         return json.dumps(hotel_data_service.get_comm_adjective_statics(request.args["baseinfo_id"]))
     except:
+        traceback.print_exc()
         abort(404)
 
 @app.route('/ugc.hotel/rest/v100/hotel/get/comments', methods=['GET'])
@@ -169,11 +171,15 @@ def get_hotel_roomnum():
 @app.route('/ugc.hotel/rest/v100/hotel/get/user_trace',methods=['GET'])
 def get_hotel_user_trace():
     try:
-        if "ring_str" in request.args:
-            data = hotel_data_service.get_user_trace(request.args["baseinfo_id"].encode("utf-8"), ring_str=request.args["ring_str"])
-        else:
-            data = hotel_data_service.get_user_trace(request.args["baseinfo_id"].encode("utf-8"))
-        return json.dumps(data)
+        data = r.get(request.url)
+        if data is None:
+            if "ring_str" in request.args:
+                data = hotel_data_service.get_user_trace(request.args["baseinfo_id"].encode("utf-8"), ring_str=request.args["ring_str"])
+            else:
+                data = hotel_data_service.get_user_trace(request.args["baseinfo_id"].encode("utf-8"))
+            data = json.dumps(data)
+            r.set(request.url,data)
+        return data
     except:
         traceback.print_exc()
         abort(404)

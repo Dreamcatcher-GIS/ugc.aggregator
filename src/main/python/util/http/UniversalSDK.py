@@ -36,7 +36,6 @@ class _Callable(object):
             else:
                 http_url =  self.client
             http_body = None if self.method == 'get' else params
-            # print http_url
             # logging.info(http_url)
             req = urllib2.Request(http_url,data=http_body)
             req.add_header('Accept-Encoding', 'gzip')

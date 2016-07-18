@@ -116,7 +116,7 @@ class PlaceService(object):
         snatcherService = BaiduMapSnatcherService(dao_setting["host"], dao_setting["db"], dao_setting["user"], dao_setting["password"], token)
         logger.debug('current index %s' % index)
         logger.debug('current bounds:'+str(bounds))
-        snatcherService.fetchPlaceDetail(bounds[0], bounds[1], bounds[2], bounds[3],"酒店")
+        snatcherService.fetchPlaceDetail(bounds[0], bounds[1], bounds[2], bounds[3],"医院")
         logger.debug("Process %s done" % index)
 
     def normalRequest(self):

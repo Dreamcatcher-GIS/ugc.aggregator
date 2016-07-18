@@ -6,7 +6,7 @@ from service.map.baidu.SnatcherService import  BaiduMapSnatcherService
 
 class SnatcherServiceTest(unittest.TestCase):
 
-    snatcherService = BaiduMapSnatcherService()
+    snatcherService = BaiduMapSnatcherService('B3Z9TG0QdQ5omGKLnPqEm3OWeMbogln8')
 
     def setUp(self):
         print 'setUp...'
