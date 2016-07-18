@@ -123,5 +123,5 @@ def out_of_china(lng, lat):
     return False
 
 if __name__=="__main__":
-    print bd09togcj02(bd_lon=118.40657541503,bd_lat=31.397989887329)
+    print bd09togcj02(bd_lon=118.97189979257,bd_lat=31.336381348076)
     print gcj02towgs84(lng=118.805048,lat=31.975998)

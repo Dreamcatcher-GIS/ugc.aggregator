@@ -94,6 +94,7 @@ class XiechengDriverService(HotelService):
         hotel_list = response.xpath("//div[@class='searchresult_list ']/ul")
         for hotel in hotel_list:
             url = hotel.xpath("li[@class='searchresult_info_name']/h2/a/@href").extract()[0]
+            address = hotel.xpath("li[@class='searchresult_info_name']/p[@class='searchresult_htladdress']/text()").extract()[0]
             commnum = hotel.xpath("li[@class='searchresult_info_judge ']/div/a/span[@class='hotel_judgement']/text()").extract()
             if len(commnum):
                 commnum = re.sub('\D','',commnum[0])
@@ -102,11 +103,12 @@ class XiechengDriverService(HotelService):
                 commnum = 0
             name = hotel.xpath("li[@class='searchresult_info_name']/h2/a/text()").extract()[0]
             self.listPageInfo.append({
-                "guid":uuid.uuid1(),
-                "url":url,
-                "hotel_name":name,
+                "guid": uuid.uuid1(),
+                "url": url,
+                "hotel_name": name,
                 "OTA": self.__ota_info,
-                "comm_num":int(commnum)
+                "comm_num": int(commnum),
+                "address": address
             })
 
 
@@ -138,7 +140,7 @@ class XiechengDriverService(HotelService):
                 geocoding_info = None
                 while 1:
                     try:
-                        geocoding_info = baidu_api_service.doGeocoding(item["hotel_name"], city=self._city)
+                        geocoding_info = baidu_api_service.doGeocoding(item["address"], city=self._city)
                         break
                     except:
                         time.sleep(0.5)
@@ -153,7 +155,8 @@ class XiechengDriverService(HotelService):
                     "x": trans_location[1],
                     "y": trans_location[0],
                     "hotel_name":item["hotel_name"],
-                    "city":self._city
+                    "city":self._city,
+                    "address": item["address"]
                 })
 
             # 根据location的id号到baseinfo表中查询

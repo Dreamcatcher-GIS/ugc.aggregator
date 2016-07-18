@@ -138,7 +138,7 @@ class HotelDAO(SuperDAO):
         return result_data
 
     '''
-    通过酒店名获取所有baseinfo
+    通过位置id获取所有baseinfo
     '''
     def get_baseinfo_by_location_id(self, location_id):
         result_data = []
@@ -208,6 +208,27 @@ class HotelDAO(SuperDAO):
         try:
             sql = "select * from location where guid='%s'"
             cursor.execute(sql%(location_id))
+            result_data = cursor.fetchall()
+        except Exception, e:
+            print e
+        db.commit()
+        cursor.close()
+        db.close()
+        return result_data
+
+    def get_location_info_by_baseinfo_id(self, baseinfo_id):
+        db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
+        cursor = db.cursor()
+        result_data = []
+        try:
+            sql = '''
+                    SELECT location.* FROM location,
+                    (
+                        SELECT location_id FROM baseinfo WHERE baseinfo.guid = '%s'
+                    )temp1
+                    WHERE location.guid = temp1.location_id
+                  '''
+            cursor.execute(sql%(baseinfo_id))
             result_data = cursor.fetchall()
         except Exception, e:
             print e

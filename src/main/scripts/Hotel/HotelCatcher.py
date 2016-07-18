@@ -85,3 +85,4 @@ if __name__ == "__main__":
     # # 开始爬取
     #hotelCatcher.startCrawlDetail("南京")
     hotelCatcher.exit()
+
