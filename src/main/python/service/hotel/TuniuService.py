@@ -22,6 +22,7 @@ from setting import local_hotel_setting
 # 配置数据库
 dao_setting = local_hotel_setting
 
+
 class TuniuService(HotelService):
 
     def __init__(self):
@@ -43,60 +44,69 @@ class TuniuService(HotelService):
 
         self.ifCrawlHotelInfo = True
 
+        self.__ota_info = "途牛"
+
     '''
     遍历酒店信息列表页，爬取酒店详情页链接
     '''
     def crawlListPage(self):
-        cityName = self._city
         # 打开酒店详情页
         tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
         after_tomorrow = tomorrow + datetime.timedelta(days=1)
-        self.openPage("http://hotel.tuniu.com/list/" + cityName + "p0s0b0"+"?checkindate=" + tomorrow.strftime('%Y-%m-%d') +"&checkoutdate=" + after_tomorrow.strftime('%Y-%m-%d'))
+        self.openPage(
+            "http://hotel.tuniu.com/list/"
+            + self._city
+            + "p0s0b0"
+            + "?checkindate="
+            + tomorrow.strftime('%Y-%m-%d')
+            + "&checkoutdate="
+            + after_tomorrow.strftime('%Y-%m-%d')
+        )
         # 记录每页的循环次数(初始值为0)
-        loopNum = 0
+        loop_num = 0
         # 标识页面是否已经爬取：False为未处理，反之为已处理
-        ifHandle = False
+        if_handle = False
         # 获取总页面数
-        pageNum = int(self.driver.find_element_by_xpath("//span[@class='page-num'][last()]/a").text)
+        page_num = int(self.driver.find_element_by_xpath("//span[@class='page-num'][last()]/a").text)
         # 遍历所有页
-        while(pageNum>=1):
+        while page_num >= 1:
             # 循环次数加1
-            loopNum = loopNum + 1
+            loop_num += 1
             # 滚动在页面最底下，然后再向上翻一页(为了让"下一页"按钮可以点击)
             self.driver.find_element_by_tag_name("body").send_keys(Keys.END)
             self.driver.find_element_by_tag_name("body").send_keys(Keys.PAGE_UP)
             # 当页面中出现“返前价”字样时，爬取页面并跳转到下一页
             if u"返前价" in self.driver.page_source:
-                pageNum = pageNum - 1
                 # 对未解析过的页面进行解析
-                if ifHandle==False:
+                if if_handle is False:
                     self.__parseUrls(self.driver.page_source)
-                    ifHandle = True
+                    print u"获取酒店数为：%d" % len(self.listPageInfo)
+                    if_handle = True
                 # 跳转到下一页
                 try:
                     if u"下一页" in self.driver.page_source:
                         self.driver.find_element_by_xpath("//div[@class='fr page-jump']/span[@class='next']").click()
+                        page_num -= 1
                         # 处理标识重新置为未处理
-                        ifHandle = False
+                        if_handle = False
                         # 单页循环次数置为零
-                        loopNum = 0
+                        loop_num = 0
                         time.sleep(random.uniform(3, 6))
-                        print pageNum
+                        print page_num
                 except Exception, e:
-                    print "error happen at clicking of nextpage"
+                    print "error happen at clicking next-page"
                     print e
                     # 将当前的错误页保存下来
-                    # self.driver.save_screenshot('%s.png'%pageNum)
+                    # self.driver.save_screenshot('%s.png'%page_num)
             # 如果单页循环次数不为零，说明没有跳转到下一页
-            if loopNum != 0:
+            if loop_num != 0:
                 # 循环次数较大的情况下（此处预定为15次）说明页面可能加载失败，跳出循环，否则继续循环获取
-                if loopNum < 15:
+                if loop_num < 15:
                     time.sleep(3)
                     continue
                 else:
                     break
-        return False if pageNum > 1 else True
-
+        return False if page_num > 1 else True
 
     '''
     抓取酒店信息
@@ -105,7 +115,7 @@ class TuniuService(HotelService):
         # 打开酒店详情页
         tomorrow = datetime.datetime.now() + datetime.timedelta(days=1)
         after_tomorrow = tomorrow + datetime.timedelta(days=1)
-        url = target[2].split('?')[0] + "?checkindate=" + tomorrow.strftime('%Y-%m-%d') +"&checkoutdate=" + after_tomorrow.strftime('%Y-%m-%d')
+        url = target[2].split('?')[0] + "?checkindate=" + tomorrow.strftime('%Y-%m-%d') + "&checkoutdate=" + after_tomorrow.strftime('%Y-%m-%d')
         self.openPage("http://hotel.tuniu.com" + url)
         self.wait(5)
         time.sleep(2)
@@ -115,11 +125,11 @@ class TuniuService(HotelService):
             print u"酒店地址失效"
             return False
         # 解析酒店页面信息
-        if self.if_crawl_hotel_info == True:
+        if self.if_crawl_hotel_info is True:
             self.__parseHotelInfo(response, target)
 
         # 解析酒店房间信息
-        if self.if_crawl_hotel_price == True:
+        if self.if_crawl_hotel_price is True:
             record_time = 0
             while 1:
                 try:
@@ -133,7 +143,7 @@ class TuniuService(HotelService):
                     break
 
         # 抓取酒店点评
-        if self.if_crawl_hotel_comment == True:
+        if self.if_crawl_hotel_comment is True:
             self.commList = []
             if target[4] > 0:
                 comm_type_num = self.__parse_comm_type_num(response)
@@ -144,7 +154,7 @@ class TuniuService(HotelService):
                     self.scroll_and_click_by_xpath("//div[@class='tradeoffConclude']/a[@data='1']", from_bottom=True, sleep_time=0.5)
                     time.sleep(2)
                     is_successful = self.__crawlHotelComment(self.driver, target[0], comm_type_num["满意"], "满意")
-                    if is_successful == False:
+                    if is_successful is False:
                         print u"爬取'满意'评论出错"
                         return False
                 if comm_type_num["一般"] > 0:
@@ -152,7 +162,7 @@ class TuniuService(HotelService):
                     self.scroll_and_click_by_xpath("//div[@class='tradeoffConclude']/a[@data='2']", from_bottom=True, sleep_time=0.5)
                     time.sleep(2)
                     is_successful = self.__crawlHotelComment(self.driver, target[0], comm_type_num["一般"], "一般")
-                    if is_successful == False:
+                    if is_successful is False:
                         print u"爬取'一般'评论出错"
                         return False
                 if comm_type_num["不满意"] > 0:
@@ -161,7 +171,7 @@ class TuniuService(HotelService):
                     self.scroll_and_click_by_xpath("//div[@class='tradeoffConclude']/a[@data='3']", from_bottom=True, sleep_time=0.5)
                     time.sleep(2)
                     is_successful = self.__crawlHotelComment(self.driver, target[0], comm_type_num["不满意"], "不满意")
-                    if is_successful == False:
+                    if is_successful is False:
                         print u"爬取'不满意'评论出错"
                         return False
                 if is_successful and target[4] - len(self.commList) < 30:
@@ -170,14 +180,13 @@ class TuniuService(HotelService):
                 return False
         return True
 
-
     '''
     保存爬取的酒店列表页数据
     '''
     def saveListPageInfo(self):
         baidu_api_service = BaiduMapAPIService("MviPFAcx5I6f1FkRQlq6iTxc")
         old_location_info = self.hotel_dao.get_locations(self._city)
-        old_baseinfo = list(self.hotel_dao.get_baseinfo(self._city, "途牛"))
+        old_baseinfo = list(self.hotel_dao.get_baseinfo(self._city, self.__ota_info))
         # 将基础数据中的if_overtime先假设为都已过时
         for i in range(0, len(old_baseinfo)):
             old_baseinfo[i] = list(old_baseinfo[i])
@@ -193,12 +202,12 @@ class TuniuService(HotelService):
                 if item["hotel_name"] == location[3]:
                     location_id = location[0]
                     break
-            # 如果没有则插入一条新的记录到location表和baseinfo表
-            if location_id == None:
+            # 如果没有则插入一条新的记录到location表中
+            if location_id is None:
                 location_id = uuid.uuid1()
                 while 1:
                     try:
-                        geocoding_info = baidu_api_service.doGeocoding(item["hotel_name"], city=self._city)
+                        geocoding_info = baidu_api_service.doGeocoding(item["address"], city=self._city)
                         break
                     except:
                         time.sleep(0.5)
@@ -209,57 +218,60 @@ class TuniuService(HotelService):
                 trans_location = CoordTransor.bd09togcj02(bd_lon=geocoding_info["result"]["location"]["lng"], bd_lat=geocoding_info["result"]["location"]["lat"])
                 print trans_location
                 new_locations.append({
-                    "guid":location_id,
+                    "guid": location_id,
                     "x": trans_location[1],
                     "y": trans_location[0],
-                    "hotel_name":item["hotel_name"],
-                    "city":self._city
+                    "hotel_name": item["hotel_name"],
+                    "city": self._city,
+                    "address": item["address"]
                 })
+
+            # 根据location的id号到baseinfo表中查询
+            # 如果已经存于表中，则更新该条数据
+            # 如果没有，则插入一条新的数据
+            if_exist = False
+            for baseinfo in old_baseinfo:
+                if location_id == baseinfo[2]:
+                    if_exist = True
+                    baseinfo[1] = item["url"]
+                    baseinfo[4] = item["comm_num"]
+                    baseinfo[5] = 0
+                    baseinfo[6] = item["comm_num"] - baseinfo[4] if item["comm_num"] - baseinfo[4] > 0 else 0
+                    break
+            if not if_exist:
                 new_baseinfo.append({
-                    "guid":item["guid"],
-                    "url":item["url"],
-                    "location_id":location_id,
-                    "OTA":"途牛",
-                    "comm_num":item["comm_num"],
-                    "if_overtime":0,
-                    "incre_num":item["comm_num"],
+                    "guid": item["guid"],
+                    "url": item["url"],
+                    "location_id": location_id,
+                    "OTA": self.__ota_info,
+                    "comm_num": item["comm_num"],
+                    "if_overtime": 0,
+                    "incre_num": item["comm_num"],
                 })
-            # 如果存在于location表,则其在baseinfo表中的记录进行更新
-            else:
-                for baseinfo in old_baseinfo:
-                    if location_id == baseinfo[2]:
-                        baseinfo[1] = item["url"]
-                        baseinfo[4] = item["comm_num"]
-                        baseinfo[5] = 0
-                        baseinfo[6] =  item["comm_num"] - baseinfo[4] if item["comm_num"]-baseinfo[4]>0 else 0
-                        break
         for baseinfo in old_baseinfo:
             update_baseinfo.append({
-                "guid":baseinfo[0],
-                "url":baseinfo[1],
-                "location_id":baseinfo[2],
-                "OTA":baseinfo[3],
-                "comm_num":baseinfo[4],
-                "if_overtime":baseinfo[5],
-                "incre_num":baseinfo[6]
+                "guid": baseinfo[0],
+                "url": baseinfo[1],
+                "location_id": baseinfo[2],
+                "OTA": baseinfo[3],
+                "comm_num": baseinfo[4],
+                "if_overtime": baseinfo[5],
+                "incre_num": baseinfo[6]
             })
-        print len(new_locations)
-        print len(new_baseinfo)
-        print len(update_baseinfo)
+        print len(new_locations), len(new_baseinfo), len(update_baseinfo)
         self.hotel_dao.save_locations(new_locations)
         self.hotel_dao.save_baseinfo(new_baseinfo)
         self.hotel_dao.update_baseinfo(update_baseinfo)
-        #self.dao.saveListPageInfo(self.listPageInfo)
 
     '''
     保存抓取的酒店信息
     '''
     def saveHotelInfo(self):
-        if self.if_crawl_hotel_comment == True:
+        if self.if_crawl_hotel_comment is True:
             self.dao.saveComments(self.commList)
-        if self.if_crawl_hotel_info == True:
+        if self.if_crawl_hotel_info is True:
             self.dao.saveHotelInfo(self.hotelItem)
-        if self.if_crawl_hotel_price == True:
+        if self.if_crawl_hotel_price is True:
             self.dao.save_room_info(self.priceList)
 
     '''
@@ -274,17 +286,19 @@ class TuniuService(HotelService):
     def __parseUrls(self, page_source):
         response = HtmlResponse(url="my HTML string",body=page_source,encoding="utf-8")
         # 抽取出每页中的酒店url存储到urlList中
-        urlList = response.xpath("//a[@class='name']/@href").extract()
-        commnumList = response.xpath("//div[@class='comment']/a/span/text()").extract()
+        url_list = response.xpath("//a[@class='name']/@href").extract()
+        comment_number_list = response.xpath("//div[@class='comment']/a/span/text()").extract()
         name_list = response.xpath("//a[@class='name']/text()").extract()
-        if len(urlList) == len(commnumList) == len(name_list):
-            for i in range(0,len(urlList)):
+        address_list = response.xpath("//span[@class='address']/text()").extract()
+        if len(url_list) == len(comment_number_list) == len(name_list) == len(address_list):
+            for i in range(0, len(url_list)):
                 self.listPageInfo.append({
-                    "guid":uuid.uuid1(),
-                    "url":urlList[i],
-                    "hotel_name":name_list[i],
-                    "OTA":"途牛",
-                    "comm_num":int(commnumList[i]),
+                    "guid": uuid.uuid1(),
+                    "url": url_list[i],
+                    "hotel_name": name_list[i],
+                    "OTA": "途牛",
+                    "comm_num": int(comment_number_list[i]),
+                    "address": address_list[i]
                 })
 
     '''
@@ -296,7 +310,7 @@ class TuniuService(HotelService):
         self.hotelItem ['name'] = response.xpath("//span[@id='hotelName']/text()").extract()[0]
         # 酒店类型
         type = response.xpath("//span[@class='types']/text()").extract()
-        if len(type)>0:
+        if len(type) > 0:
             self.hotelItem ['type'] = type[0]
         # 酒店位置
         self.hotelItem ['address'] = re.sub('\s+', '', response.xpath("//span[@class='address']/text()").extract()[0])
@@ -379,60 +393,59 @@ class TuniuService(HotelService):
         type_num["不满意"] = int(dissatisfaction[0]) if len(dissatisfaction) > 0 else 0
         return type_num
 
-
     '''
     抓取酒店评论
     '''
     def __crawlHotelComment(self, driver, hotel_id, comm_num, comm_type):
-        pageNum = comm_num/20 + 1
+        page_num = comm_num/20 + 1
         # 单页循环次数
-        loopNum = 0
+        loop_num = 0
         # 标识当前页面是否已经爬取：False为未处理，反之为已处理
-        ifHandle = False
+        if_handle = False
         # 遍历所有页
-        while(pageNum>=1):
+        while(page_num>=1):
             # 循环次数加1
-            loopNum +=  1
+            loop_num +=  1
             # 当页面中出现“返前价”字样时，爬取页面并跳转到下一页
             if u"u5 clearfix" in self.driver.page_source:
                 # 对未解析过的页面进行解析
-                if ifHandle==False:
+                if if_handle==False:
                     # 解析评论
                     if self.__parseHotelComment(self.driver.page_source, hotel_id, comm_type) == False:
                         print u"重复爬取页面"
                         return False
-                    ifHandle = True
+                    if_handle = True
                     # 如果当前是最后一页，抓取完成后直接跳出循环
-                    if pageNum == 1:
+                    if page_num == 1:
                         break
                 # 跳转到下一页
                 try:
-                    # 当pageNum等于0时,即到达评论的最后一页,此时不用点击下一页
+                    # 当page_num等于0时,即到达评论的最后一页,此时不用点击下一页
                     if u"下一页" in self.driver.page_source:
                         self.scroll_and_click_by_xpath("//div[@id='remarksPage']/a[@class='page-next']", from_bottom=True, refresh_if_failed=False, sleep_time=0.5)
-                        pageNum = pageNum - 1
+                        page_num -= 1
                         # 处理标识重新置为未处理
-                        ifHandle = False
+                        if_handle = False
                         # 单页循环次数置为零
-                        loopNum = 0
+                        loop_num = 0
                         time.sleep(random.uniform(3,4))
                 except Exception, e:
                     print "error happen at clicking of nextpage"
                     print e
                     # 将当前的错误页保存下来
-                    # self.driver.save_screenshot('%s.png'%pageNum)
+                    # self.driver.save_screenshot('%s.png'%page_num)
             else:
                 break
 
             # 如果单页循环次数不为零，说明没有跳转到下一页
-            if loopNum != 0 :
+            if loop_num != 0 :
                 # 循环次数较大的情况下（此处预定为15次）说明页面可能加载失败，跳出循环，否则继续循环获取
-                if loopNum < 15:
+                if loop_num < 15:
                     time.sleep(2)
                     continue
                 else:
                     break
-        return False if pageNum>1 else True
+        return False if page_num>1 else True
 
     '''
     解析酒店评论

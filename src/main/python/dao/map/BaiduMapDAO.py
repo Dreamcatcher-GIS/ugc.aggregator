@@ -63,19 +63,17 @@ class BaiduMapDAO(object):
         cursor = db.cursor()
 
         cursor.execute("SELECT * FROM hotelinfo")
-
         rows = cursor.fetchall()
-        return rows
-
         db.commit()
         cursor.close()
         db.close()
+        return rows
 
     def savePlaceDetail(self, data):
         db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
         cursor = db.cursor()
         if 'results' not in data:
-            return;
+            return
         for poi in data['results']:
             try:
                 name = poi['name']

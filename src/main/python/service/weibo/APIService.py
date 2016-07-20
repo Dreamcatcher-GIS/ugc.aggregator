@@ -31,3 +31,9 @@ class WeiboAPIService(object):
 
     def get_weibo_user_timeline(self, uid, count=50):
         return self.client.place.user_timeline.get(uid=uid, count=count)
+
+    def get_poi_timeline(self, poiid, count=50, page=1):
+        return self.client.place.poi_timeline.get(poiid=poiid, count=count, page=page)
+
+    def get_address_to_geo(self, address):
+        return self.client.location.geo.address_to_geo.get(address=address)

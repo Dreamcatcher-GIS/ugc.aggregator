@@ -7,7 +7,7 @@ from service.map.baidu.SnatcherService import BaiduMapSnatcherService
 
 class PlaceCrawlTest(unittest.TestCase):
 
-    snatcherService=BaiduMapSnatcherService()
+    snatcherService=BaiduMapSnatcherService('B3Z9TG0QdQ5omGKLnPqEm3OWeMbogln8')
 
     @classmethod
     def setUpClass(cls):

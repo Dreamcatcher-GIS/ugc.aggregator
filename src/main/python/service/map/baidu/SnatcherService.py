@@ -7,7 +7,7 @@ import multiprocessing
 
 import logging
 import re
-import math
+from math import *
 import json
 
 from util.geo.GeoUtil import GeoUtil
@@ -86,6 +86,7 @@ class BaiduMapSnatcherService(object):
     从数据库读取周边设施数据
     '''
     def getdata(self):
+
         Data = self.baiduMapDAO._returnarou()
         for data in Data:
             if len(data[-1]):
@@ -94,7 +95,7 @@ class BaiduMapSnatcherService(object):
                     self.around_data["hotelname"] = data[2]
                     self.around_data["facilities_lntandlang"] = self.around_facilities_distance
                     self.get_maxdistance_facilities()
-                    self.baiduMapDAO.save_around_facilities(self.around_data)
+                    # self.baiduMapDAO.save_around_facilities(self.around_data)
                     self.facilities_ditance = []
                     self.disigeziduan = []
                     self.maxdistance_and_hotelzuobiao = []
@@ -154,6 +155,7 @@ class BaiduMapSnatcherService(object):
     '''
     def compute(self,hotel_x,hotel_y,facilities_x,facilities_y,facilities_name):
         distance = 6371 * math.acos(math.cos(hotel_y)*math.cos(facilities_y)*math.cos(hotel_x-facilities_x)+math.sin(hotel_y)*math.sin(facilities_y))
+        print distance
         self.facilities_ditance.append({facilities_name:distance})
 
     '''
@@ -182,6 +184,26 @@ class BaiduMapSnatcherService(object):
                     self.disigeziduan
                     self.around_data["maxsite"] = self.disigeziduan
                     break
+
+    '''
+    计算地球上两点的距离
+    '''
+    def calcDistance(Lat_A, Lng_A, Lat_B, Lng_B):
+         ra = 6378.140  # 赤道半径 (km)
+         rb = 6356.755  # 极半径 (km)
+         flatten = (ra - rb) / ra  # 地球扁率
+         rad_lat_A = radians(Lat_A)
+         rad_lng_A = radians(Lng_A)
+         rad_lat_B = radians(Lat_B)
+         rad_lng_B = radians(Lng_B)
+         pA = atan(rb / ra * tan(rad_lat_A))
+         pB = atan(rb / ra * tan(rad_lat_B))
+         xx = acos(sin(pA) * sin(pB) + cos(pA) * cos(pB) * cos(rad_lng_A - rad_lng_B))
+         c1 = (sin(xx) - xx) * (sin(pA) + sin(pB)) ** 2 / cos(xx / 2) ** 2
+         c2 = (sin(xx) + xx) * (sin(pA) - sin(pB)) ** 2 / sin(xx / 2) ** 2
+         dr = flatten / 8 * (c1 - c2)
+         distance = ra * (xx + dr)
+         return distance
 
 
 
@@ -320,3 +342,8 @@ class BaiduMapSnatcherService(object):
 
     def setNullStrToNull(self,tableName):
         self.baiduMapDAO.setNullStrToNull(tableName)
+
+if __name__=="__main__":
+    baiduMapSnatcherService = BaiduMapSnatcherService("localhost","xiecheng","root","1234")
+    baiduMapSnatcherService.getdata()
+    # print math.sin(30)

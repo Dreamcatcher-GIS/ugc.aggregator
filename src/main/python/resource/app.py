@@ -11,8 +11,8 @@ import redis
 r = redis.Redis(host='localhost',port=6379,db=0)
 
 from service.weibo.WeiboService import WeiboService
+from service.hotel.HotelDataService import HotelDataService
 from service.hotel.TuniuDataService import TuniuDataService
-from service.hotel.xiecheng.DriveServices import XiechengDriverService
 from service.hotel.xiecheng.XichengDataService import XichengDataService
 
 
@@ -20,16 +20,10 @@ app = Flask(__name__)
 CORS(app)
 
 weibo_service = WeiboService()
-xiechengDriverService = XiechengDriverService()
 tuniu_data_service = TuniuDataService()
 xiecheng_data_service = XichengDataService()
+hotel_data_service = HotelDataService()
 
-@app.route('/hello', methods=['GET'])
-def hello_world():
-    if "name" in request.args:
-        return "Hello" + request.args["name"]
-    else:
-        return 'Hello World!'
 
 @app.route('/ugc.hotel/rest/v100/weibo/get/nearby_timeline', methods=['GET'])
 def weibo_nearbytimeline():
@@ -73,6 +67,14 @@ def get_weibo_user_trace():
         traceback.print_exc()
         abort(404)
 
+@app.route('/ugc.hotel/rest/v100/hotel/get/baseinfo', methods=['GET'])
+def get_baseinfo_by_location_id():
+    try:
+        return json.dumps(hotel_data_service.get_baseinfo_by_location_id(request.args["location_id"]))
+    except:
+        traceback.print_exc()
+        abort(404)
+
 @app.route('/ugc.hotel/rest/v100/hotel/get/CommTypeNum', methods=['GET'])
 def get_comm_type_num():
     try:
@@ -80,19 +82,35 @@ def get_comm_type_num():
     except:
         abort(404)
 
+@app.route('/ugc.hotel/rest/v100/hotel/get/type_score/statics', methods=['GET'])
+def get_comm_type_score_statics():
+    try:
+        return json.dumps(hotel_data_service.get_comm_type_score_statics(request.args["baseinfo_id"], request.args["ota"]))
+    except:
+        abort(404)
+
 @app.route('/ugc.hotel/rest/v100/hotel/get/viewpoint', methods=['GET'])
 def get_viewpoint():
     try:
-        if "hotel_name" in request.args:
-            return json.dumps(tuniu_data_service.get_comm_viewpoints(request.args["hotel_name"]))
+        data = json.dumps(hotel_data_service.get_comm_viewpoints(request.args["baseinfo_id"]))
+        return data
+    except:
+        abort(404)
+
+@app.route('/ugc.hotel/rest/v100/hotel/get/tuniu/viewpoint', methods=['GET'])
+def get_viewpoint_tuniu():
+    try:
+        data = json.dumps(tuniu_data_service.get_comm_viewpoints(request.args["hotel_name"]))
+        return data
     except:
         abort(404)
 
 @app.route('/ugc.hotel/rest/v100/hotel/get/adjective', methods=['GET'])
 def get_adjective_statics():
     try:
-        return json.dumps(tuniu_data_service.get_comm_adjective_statics(request.args["hotel_name"]))
+        return json.dumps(hotel_data_service.get_comm_adjective_statics(request.args["baseinfo_id"]))
     except:
+        traceback.print_exc()
         abort(404)
 
 @app.route('/ugc.hotel/rest/v100/hotel/get/comments', methods=['GET'])
@@ -145,6 +163,25 @@ def get_hotel_roomnum():
         data = tuniu_data_service.getbed_roomnum(request.args["hotel_name"])
         return json.dumps(data)
     except:
+        abort(404)
+
+'''
+发布用户轨迹数据
+'''
+@app.route('/ugc.hotel/rest/v100/hotel/get/user_trace',methods=['GET'])
+def get_hotel_user_trace():
+    try:
+        data = r.get(request.url)
+        if data is None:
+            if "ring_str" in request.args:
+                data = hotel_data_service.get_user_trace(request.args["baseinfo_id"].encode("utf-8"), ring_str=request.args["ring_str"])
+            else:
+                data = hotel_data_service.get_user_trace(request.args["baseinfo_id"].encode("utf-8"))
+            data = json.dumps(data)
+            r.set(request.url,data)
+        return data
+    except:
+        traceback.print_exc()
         abort(404)
 
 if __name__ == '__main__':

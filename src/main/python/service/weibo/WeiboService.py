@@ -175,7 +175,8 @@ class WeiboService(object):
         result_data = []
         data = Queue()
         tasks = Queue()
-        for id in id_str.split(","):
+
+        for id in id_str.split(",")[0:10]:
             tasks.put_nowait(id)
         # 查看可用的api账号
         if self.api_accounts == None:

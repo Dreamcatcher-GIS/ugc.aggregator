@@ -40,7 +40,8 @@ goodAkList = ["lWpbR5OCQYybppqci2kGYgFd", "WBw4kIepZzGp4kH5Gn3r0ACy", "ou5X9BBEM
               "Qdgt7mclCrkFdPBizd3uUWsE","lWhyznAxPPYdanHLKZpjR272","e5UujacxFn50xo2RadnTEtly",
               "WEC1LKpjIWfCehFqGVPm6Dn6", "DW2CwL3B3271CiVyw7GdBsfR", "LPtK0OiWUItxFK6qd3m1FsRD",
               "oD8Okbi8FdRm5keKBvfHuR7H","K1bHzgxG2osaIiKyAAel57jQ",
-              "MviPFAcx5I6f1FkRQlq6iTxc", "MviPFAcx5I6f1FkRQlq6iTxc","MviPFAcx5I6f1FkRQlq6iTxc"
+              "MviPFAcx5I6f1FkRQlq6iTxc", "MviPFAcx5I6f1FkRQlq6iTxc","MviPFAcx5I6f1FkRQlq6iTxc",
+              "B3Z9TG0QdQ5omGKLnPqEm3OWeMbogln8","GOnUNZzHBUlVsSbuZIfr8XCCqLRonKjM"
              ]
 
 path = "c:/data/point_cache/"
