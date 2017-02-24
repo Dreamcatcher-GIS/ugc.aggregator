@@ -42,8 +42,8 @@ class SuperDAO(object):
             try:
                 cursor.execute(sql, record.values())
             except:
+                print record['senti_value']
                 traceback.print_exc()
-                print record["comm_time"]
                 break
         db.commit()
         cursor.close()

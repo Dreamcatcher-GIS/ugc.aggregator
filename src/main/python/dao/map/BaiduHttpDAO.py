@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-__author__ = 'DreamCatcher'
+__author__ = 'DreamCatcher，LiuYang'
 
 import MySQLdb
 import uuid

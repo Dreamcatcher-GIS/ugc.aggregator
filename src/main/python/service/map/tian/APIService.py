@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-__author__ = 'DreamCathcer'
 
 from util.http.UniversalSDK import APIClient
 

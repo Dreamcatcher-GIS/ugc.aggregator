@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__author__ = 'kaipeng'
+__author__ = 'LiuYang'
 
 import MySQLdb
 import uuid

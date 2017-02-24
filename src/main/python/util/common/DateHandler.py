@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-__author__ = 'DreamCathcer'
+__author__ = 'LiuYang,geosmart'
 
 '''
 时间处理类

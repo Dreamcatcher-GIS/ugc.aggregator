@@ -34,10 +34,10 @@ class HotelDAO(SuperDAO):
             try:
                 sql = '''
                       update baseinfo
-                      set url='%s',location_id='%s',OTA='%s',comm_num='%s',if_overtime='%s',incre_num='%s'
+                      set url='%s',location_id='%s',OTA='%s',comm_num='%s',if_overtime='%s',incre_num='%s',img='%s'
                       where guid='%s'
                       '''
-                cursor.execute(sql%(item["url"], item["location_id"], item["OTA"], item["comm_num"], item["if_overtime"],item["incre_num"], item["guid"]))
+                cursor.execute(sql%(item["url"], item["location_id"], item["OTA"], item["comm_num"], item["if_overtime"],item["incre_num"], item["img"],item["guid"]))
             except:
                 traceback.print_exc()
         db.commit()
@@ -101,11 +101,11 @@ class HotelDAO(SuperDAO):
         db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
         cursor = db.cursor()
         for record in records:
-            if record["senti_value"]==None:
+            if record["senti_value"] is None:
                 continue
             try:
                 sql = "update remark set senti_value='%s',viewpoint='%s' where guid='%s'"
-                cursor.execute(sql%(record["senti_value"], record["viewpoint"],record["guid"]))
+                cursor.execute(sql % (record["senti_value"], record["viewpoint"], record["guid"]))
             except Exception, e:
                 print record
                 print e
@@ -128,7 +128,7 @@ class HotelDAO(SuperDAO):
                   )temp1
                   where baseinfo.location_id = temp1.guid
                   '''
-            cursor.execute(sql%(hotelname, city))
+            cursor.execute(sql % (hotelname, city))
             result_data = cursor.fetchall()
         except:
             traceback.print_exc()
@@ -148,7 +148,7 @@ class HotelDAO(SuperDAO):
             sql = '''
                   select * from baseinfo where location_id = '%s'
                   '''
-            cursor.execute(sql%location_id)
+            cursor.execute(sql % location_id)
             result_data = cursor.fetchall()
         except:
             traceback.print_exc()
@@ -170,7 +170,7 @@ class HotelDAO(SuperDAO):
                     where remark.baseinfo_id = '%s'
                     group by remark.comm_type
                   '''
-            cursor.execute(sql%(baseinfo_id))
+            cursor.execute(sql % baseinfo_id)
             comm_type_num = cursor.fetchall()
         except Exception, e:
             print e
@@ -192,7 +192,7 @@ class HotelDAO(SuperDAO):
                     where baseinfo_id = '%s'
                     group by remark.comm_score
                   '''
-            cursor.execute(sql%(baseinfo_id))
+            cursor.execute(sql % baseinfo_id)
             comm_type_num = cursor.fetchall()
         except Exception, e:
             print e
@@ -207,7 +207,7 @@ class HotelDAO(SuperDAO):
         result_data = []
         try:
             sql = "select * from location where guid='%s'"
-            cursor.execute(sql%(location_id))
+            cursor.execute(sql % location_id)
             result_data = cursor.fetchall()
         except Exception, e:
             print e
@@ -228,7 +228,7 @@ class HotelDAO(SuperDAO):
                     )temp1
                     WHERE location.guid = temp1.location_id
                   '''
-            cursor.execute(sql%(baseinfo_id))
+            cursor.execute(sql % baseinfo_id)
             result_data = cursor.fetchall()
         except Exception, e:
             print e
@@ -243,7 +243,7 @@ class HotelDAO(SuperDAO):
         for record in records:
             try:
                 sql = "update remark set word_freq='%s' where guid='%s'"
-                cursor.execute(sql%(record["word_freq"], record["guid"]))
+                cursor.execute(sql % (record["word_freq"], record["guid"]))
             except Exception, e:
                 print e
         db.commit()
@@ -267,7 +267,7 @@ class HotelDAO(SuperDAO):
                     group by remark.username
                     having count(*)>2
                   '''
-            cursor.execute(sql%(baseinfo_id))
+            cursor.execute(sql % baseinfo_id)
             user_list = cursor.fetchall()
         except Exception, e:
             print e
@@ -276,7 +276,7 @@ class HotelDAO(SuperDAO):
         db.close()
         return user_list
 
-    def get_remarks_by_username(self,username):
+    def get_remarks_by_username(self, username):
         db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
         cursor = db.cursor()
         result_data = []
@@ -289,7 +289,86 @@ class HotelDAO(SuperDAO):
                     where temp1.baseinfo_id = baseinfo.guid and baseinfo.location_id = location.guid
                     order by comm_time
                   '''
-            cursor.execute(sql%(username))
+            cursor.execute(sql % username)
+            result_data = cursor.fetchall()
+        except Exception, e:
+            print e
+        db.commit()
+        cursor.close()
+        db.close()
+        return result_data
+
+    def get_user(self, user_name):
+        db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
+        cursor = db.cursor()
+        result_data = []
+        try:
+            sql = '''
+                    SELECT * from location,baseinfo,
+                    (
+                        SELECT * FROM `user` WHERE user_name='%s'
+                    )temp1
+                    WHERE temp1.location_id = location.guid AND location.guid = baseinfo.location_id
+                  '''
+            cursor.execute(sql % user_name)
+            result_data = cursor.fetchall()
+        except Exception, e:
+            print e
+        db.commit()
+        cursor.close()
+        db.close()
+        return result_data
+
+    '''
+    通过酒店名获取所有评论(汇总所有OTA)
+    '''
+    def get_remarks_by_hotel_name(self, hotel_name):
+        db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
+        cursor = db.cursor()
+        result_data = []
+        try:
+            sql = '''
+                    SELECT remark.* FROM remark,
+                    (
+                        SELECT baseinfo.* FROM baseinfo,
+                        (
+                            SELECT * FROM location WHERE hotel_name='%s' AND city = '南京'
+                        )temp1
+                        WHERE baseinfo.location_id = temp1.guid
+                    )temp2
+                    WHERE remark.baseinfo_id = temp2.guid
+                  '''
+            cursor.execute(sql % hotel_name)
+            result_data = cursor.fetchall()
+        except Exception, e:
+            print e
+        db.commit()
+        cursor.close()
+        db.close()
+        return result_data
+
+    def get_remarks_by_text(self, hotel_name, text = None, ota = None):
+        db = MySQLdb.connect(self.host, self.user, self.password, self.db, charset='utf8')
+        cursor = db.cursor()
+        result_data = []
+        try:
+            sql = '''
+                    SELECT remark.* FROM remark,
+                    (
+                        SELECT baseinfo.* FROM baseinfo,
+                        (
+                            SELECT * FROM location WHERE hotel_name='%s' AND city = '南京'
+                        )temp1
+                        WHERE baseinfo.location_id = temp1.guid
+                    )temp2
+                    WHERE remark.baseinfo_id = temp2.guid
+                  '''
+            if ota is not None:
+                sql += " and temp2.OTA = '%s'" % ota
+            if text is not None:
+                sql += " and remark.remark like '%%" + text + "%%'"
+            print sql
+            cursor.execute(sql % hotel_name)
             result_data = cursor.fetchall()
         except Exception, e:
             print e

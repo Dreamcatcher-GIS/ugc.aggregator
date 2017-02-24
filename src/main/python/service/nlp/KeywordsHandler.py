@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-__author__ = 'DreamCathcer'
+__author__ = 'DreamCathcer，LiuYang'
 
 import csv
 from snownlp.sentiment import Sentiment

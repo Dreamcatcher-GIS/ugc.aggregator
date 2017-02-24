@@ -35,8 +35,8 @@ class GeocodingService(object):
 
     def fetchAddressNodeByPoints(self, index, points):
         print 'current index %s,points %s' % (index, str(len(points)))
-        # snatcherService = BaiduMapSnatcherService(akList[0])
-        # snatcherService.fetchAddressNode(points)
+        snatcherService = BaiduMapSnatcherService(akList[0])
+        snatcherService.fetchAddressNode(points)
         print 'Process %s done' % index
         # TODO multiprocessing多进程实现，此处代码最后一个process不执行fetchAddressNode内的代码
 

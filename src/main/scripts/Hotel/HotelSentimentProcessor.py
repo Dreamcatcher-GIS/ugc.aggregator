@@ -37,6 +37,7 @@ class HotelSentimentProcessor(object):
                 try:
                     sentiment_value = self.hotelnlp.sentiment(remark.encode("utf-8"))
                     sentiment_value = round(sentiment_value*1000)/1000
+                    print sentiment_value
                 except:
                     print comm[2]
                     traceback.print_exc()

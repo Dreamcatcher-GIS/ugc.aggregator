@@ -2,7 +2,7 @@
 import json
 import traceback
 
-__author__ = 'DreamCathcer'
+__author__ = 'lizhen'
 
 import random
 import datetime
@@ -78,6 +78,7 @@ class WeiboService(object):
                             data.put_nowait(info['statuses'])
                     print "thread end:  account:"+str(api_account)+"  range:"+str(time_range)
                 except:
+                    traceback.print_exc()
                     tasks.put_nowait(time_range)
                     continue
 

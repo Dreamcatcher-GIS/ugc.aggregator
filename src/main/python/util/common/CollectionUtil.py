@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-__author__ = 'geosmart'
+__author__ = 'LiuYang,geosmart'
 import math
 
 class CollectionUtil(object):

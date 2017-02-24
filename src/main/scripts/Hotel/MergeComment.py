@@ -18,29 +18,29 @@ hotel_dao = HotelDAO(dao_setting["host"], dao_setting["db"], dao_setting["user"]
 tuniu_dao = TuniuDAO(dao_setting["host"], dao_setting["db"], dao_setting["user"], dao_setting["password"])
 xiecheng_dao = xiechengDAO(dao_setting["host"], dao_setting["db"], dao_setting["user"], dao_setting["password"])
 
-tuniu_comm = tuniu_dao.get_remarks()
-
-hotel_comm = []
-i = 0
-for comm in tuniu_comm:
-    i+=1
-    print i
-    baseinfo = hotel_dao.get_baseinfo_by_hotelname(comm[10].encode('utf-8'), '南京')
-    for info in baseinfo:
-        if info[3].encode('utf-8') == '途牛':
-            hotel_comm.append({
-                "guid":uuid.uuid1(),
-                "username":comm[1],
-                "remark":comm[2],
-                "comm_time":comm[3],
-                "comm_type":comm[6],
-                "user_type":comm[4],
-                "senti_value":comm[7],
-                "viewpoint":comm[8],
-                "word_freq":comm[9],
-                "baseinfo_id":info[0],
-            })
-hotel_dao.save_remarks(hotel_comm)
+# tuniu_comm = tuniu_dao.get_remarks()
+#
+# hotel_comm = []
+# i = 0
+# for comm in tuniu_comm:
+#     i+=1
+#     print i
+#     baseinfo = hotel_dao.get_baseinfo_by_hotelname(comm[10].encode('utf-8'), '南京')
+#     for info in baseinfo:
+#         if info[3].encode('utf-8') == '途牛':
+#             hotel_comm.append({
+#                 "guid":uuid.uuid1(),
+#                 "username":comm[1],
+#                 "remark":comm[2],
+#                 "comm_time":comm[3],
+#                 "comm_type":comm[6],
+#                 "user_type":comm[4],
+#                 "senti_value":comm[7],
+#                 "viewpoint":comm[8],
+#                 "word_freq":comm[9],
+#                 "baseinfo_id":info[0],
+#             })
+# hotel_dao.save_remarks(hotel_comm)
 
 print '=============Tuniu Done================='
 
@@ -62,17 +62,18 @@ for comm in xiecheng_comms:
         for info in baseinfo:
             if info[3] == u'携程':
                 baseinfo_id = info[0]
-    if baseinfo_id!="":
+    if baseinfo_id != "":
         try:
             hotel_comm.append({
                 "guid":uuid.uuid1(),
                 "username":comm[1],
-                "remark":comm[7],
+                "remark":comm[6],
                 "intime":re.sub(u"\(本次服务由代理商提供\)",u"",comm[3]),
-                "comm_time":re.sub(u"\(本次服务由代理商提供\)",u"",comm[6]),
                 "comm_score":float(comm[2]) if comm[2]!=u'' else None,
                 "user_type":comm[4],
                 "baseinfo_id":baseinfo_id,
+                "senti_value":comm[7],
+                "viewpoint":comm[8]
             })
         except:
             traceback.print_exc()

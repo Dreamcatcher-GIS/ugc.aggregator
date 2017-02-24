@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+__author__ = 'LiuYang'
 import MySQLdb
 import uuid
 import random
@@ -141,4 +141,4 @@ class xiechengDAO(SuperDAO):
         return rows
 
     def get_comments(self):
-        return self.get_records("hotelcommentinfo")
+        return self.get_records("xiechengcomment")

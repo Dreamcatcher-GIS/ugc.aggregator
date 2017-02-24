@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__author__ = 'kaipeng'
+__author__ = 'lizhen'
 
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait

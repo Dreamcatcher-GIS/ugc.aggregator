@@ -79,6 +79,8 @@ class TuniuService(HotelService):
             if u"返前价" in self.driver.page_source:
                 # 对未解析过的页面进行解析
                 if if_handle is False:
+                    pageData =  self.driver.execute_script('return pageData')
+                    print pageData['list'][0]['pos']
                     self.__parseUrls(self.driver.page_source)
                     print u"获取酒店数为：%d" % len(self.listPageInfo)
                     if_handle = True

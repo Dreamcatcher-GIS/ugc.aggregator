@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-__author__ = 'DreamCathcer'
 
 #baidu_map_uadb_setting = {"host":"192.168.1.161", "db":"standarddb", "user":"standarddb", "password":"standarddb"}
 baidu_map_uadb_setting = {"host":"localhost", "db":"ugc", "user":"root", "password":"1234"}
